@@ -28,7 +28,7 @@ uintptr_t GetBaseEntity(int index, uintptr_t client) {
 	if (entitylistbase == 0) {
 		return 0;
 	}
-	return *reinterpret_cast<std::uintptr_t*>(entitylistbase + (0x78 * (index & 0x1FF)));
+	return *reinterpret_cast<std::uintptr_t*>(entitylistbase + (0x70 * (index & 0x1FF)));
 }
 
 uintptr_t GetBaseEntityFromHandle(uint32_t uHandle, uintptr_t client) {
@@ -43,7 +43,7 @@ uintptr_t GetBaseEntityFromHandle(uint32_t uHandle, uintptr_t client) {
 	if (entitylistbase == 0) {
 		return 0;
 	}
-	return *reinterpret_cast<std::uintptr_t*>(entitylistbase + 0x78 * (nIndex & 0x1FF));
+	return *reinterpret_cast<std::uintptr_t*>(entitylistbase + 0x70 * (nIndex & 0x1FF));
 }
 
 
@@ -281,9 +281,9 @@ CGameTrace TraceShape(Vector3& vecStart, Vector3& vecEnd, uintptr_t pSkipEntity,
 	float Start[3] = { vecStart.x,vecStart.y,vecStart.z };
 	float End[3] = { vecEnd.x,vecEnd.y,vecEnd.z };
 
-	TTaceRay pfnTraceShape = (TTaceRay)(client + 0x6EA180);
-	Filter pfnCreateFilter = (Filter)(client + 0x1FB980);
-	void* pTraceManager = *(void**)(client + 0x1BCAB68);
+	TTaceRay pfnTraceShape = (TTaceRay)(client + 0x6EE970);
+	Filter pfnCreateFilter = (Filter)(client + 0x2007C0);
+	void* pTraceManager = *(void**)(client + 0x1BB4608);
 
 	CTraceRay pTraceRay{};
 	CTraceFilter pFilter{};
@@ -586,10 +586,6 @@ void draw_esp() {
 		auto player_co = GetBaseEntity(i, client);
 		if (!player_co)
 			continue;
-		if (player_co == localpawn) {
-			//Index = i;
-			continue;
-		}
 		auto player_hpawn = *reinterpret_cast<uint32_t*>(player_co + cs2_dumper::schemas::client_dll::CBasePlayerController::m_hPawn);
 		if (player_hpawn == 0xFFFFFFFF)
 		{
