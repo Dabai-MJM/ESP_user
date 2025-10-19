@@ -61,8 +61,6 @@ namespace cs {
 		inline bool waitingForKeybind_nade = false;
 		inline int aimbotHotkey_nade = VK_MBUTTON;
 		inline bool autoaim = false;
-		inline bool team_CT = false;
-		inline bool team_T = false;
 	}
 	
 	

@@ -178,15 +178,11 @@ void draw_Menu() {
 	};
 	ImGui::Begin(u8"嘉明专属");
 	{
-		
-		ImGui::Checkbox(u8"当前队伍(CT)", &cs::visuals::team_CT);
-		ImGui::Checkbox(u8"当前队伍(T)", &cs::visuals::team_T);
-		
 		ImGui::Checkbox(u8"方框透视", &cs::visuals::box);
 		if (cs::visuals::box)
 		{
-			ImGui::ColorEdit4(u8"方框可见颜色", &cs::visuals::PathFillConvex.x);
 			ImGui::ColorEdit4(u8"方框不可见颜色", &cs::visuals::boxColor.x);
+			ImGui::ColorEdit4(u8"方框可见颜色", &cs::visuals::PathFillConvex.x);
 			ImGui::ListBox(
 				"##BoxType",
 				&cs::visuals::SelectedBoxType,
@@ -222,9 +218,8 @@ void draw_Menu() {
 		ImGui::Separator();
 		ImGui::Checkbox(u8"骨骼透视", &cs::visuals::bone);
 		if (cs::visuals::bone) {
-			ImGui::ColorEdit4(u8"骨骼可见颜色", &cs::visuals::boneVisColor.x);
 			ImGui::ColorEdit4(u8"骨骼不可见颜色", &cs::visuals::boneColor.x);
-			
+			ImGui::ColorEdit4(u8"骨骼可见颜色", &cs::visuals::boneVisColor.x);
 		}
 		
 		ImGui::Checkbox(u8"护甲", &cs::visuals::armor);
@@ -312,6 +307,7 @@ void draw_Menu() {
 		}
 
 		ImGui::Checkbox(u8"自瞄扳机(适用于狙)", &cs::visuals::autoaim);
+		
 	}
 	ImGui::End();
 }
