@@ -281,9 +281,9 @@ CGameTrace TraceShape(Vector3& vecStart, Vector3& vecEnd, uintptr_t pSkipEntity,
 	float Start[3] = { vecStart.x,vecStart.y,vecStart.z };
 	float End[3] = { vecEnd.x,vecEnd.y,vecEnd.z };
 
-	TTaceRay pfnTraceShape = (TTaceRay)(client + 0x6EE970);
-	Filter pfnCreateFilter = (Filter)(client + 0x2007C0);
-	void* pTraceManager = *(void**)(client + 0x1BB4608);
+	TTaceRay pfnTraceShape = (TTaceRay)(client + 0x6EE9C0);
+	Filter pfnCreateFilter = (Filter)(client + 0x2007E0);
+	void* pTraceManager = *(void**)(client + 0x1BB4628);
 
 	CTraceRay pTraceRay{};
 	CTraceFilter pFilter{};
@@ -420,7 +420,6 @@ void draw_esp() {
 
 	auto local_ctrl = *reinterpret_cast<uintptr_t*>(client + cs2_dumper::offsets::client_dll::dwLocalPlayerController);
 
-
 	if (!local_ctrl)
 	{
 		return;
@@ -441,7 +440,7 @@ void draw_esp() {
 	{
 		return;
 	}
-	
+	auto health = *reinterpret_cast<int*>(localpawn + cs2_dumper::schemas::client_dll::C_BaseEntity::m_iHealth);
 	auto local_eyepos_op_vec = GetEyePos(localpawn);//本地玩家三维视角
 	if (!local_eyepos_op_vec.has_value())
 		return;
@@ -533,7 +532,6 @@ void draw_esp() {
 	{
 		return;
 	}
-	
 	Vector3 Local_Head_Pos = BonePos(localpawn, 6);
 	
 	//int Index;
@@ -605,7 +603,6 @@ void draw_esp() {
 		auto player_health = *reinterpret_cast<int*>(player_pawn + cs2_dumper::schemas::client_dll::C_BaseEntity::m_iHealth);
 		if (player_health <= 0 || player_health > 100)
 			continue;
-
 		auto weaponServices = *reinterpret_cast<uintptr_t*>(player_pawn + cs2_dumper::schemas::client_dll::C_BasePlayerPawn::m_pWeaponServices);
 		if (!weaponServices) {
 			continue;
@@ -978,6 +975,368 @@ void draw_esp() {
 			}
 			if (closest < 10.0f && bVisible) {
 				mouse_left_click();
+			}
+		}
+	}
+}
+
+void test() {
+	const auto client = reinterpret_cast<uintptr_t>(GetModuleHandle(L"client.dll"));
+
+	auto local_ctrl = *reinterpret_cast<uintptr_t*>(client + cs2_dumper::offsets::client_dll::dwLocalPlayerController);
+
+	if (!local_ctrl)
+	{
+		return;
+	}
+	auto local_hpawn = *reinterpret_cast<uint32_t*>(local_ctrl + cs2_dumper::schemas::client_dll::CBasePlayerController::m_hPawn);
+	if (local_hpawn == 0xFFFFFFFF)
+	{
+		return;
+	}
+
+	auto localpawn = GetBaseEntityFromHandle(local_hpawn, client);
+	if (!localpawn)
+	{
+		return;
+	}
+	auto Matrix = reinterpret_cast<float*>(client + cs2_dumper::offsets::client_dll::dwViewMatrix);
+	if (!Matrix)
+	{
+		return;
+	}
+	auto health = *reinterpret_cast<int*>(localpawn + cs2_dumper::schemas::client_dll::C_BaseEntity::m_iHealth);
+	if (health == 0) {
+		for (int i = 0; i < 64; i++) {
+			auto player_co = GetBaseEntity(i, client);
+			if (!player_co)
+				continue;
+			auto player_hpawn = *reinterpret_cast<uint32_t*>(player_co + cs2_dumper::schemas::client_dll::CBasePlayerController::m_hPawn);
+			if (player_hpawn == 0xFFFFFFFF)
+			{
+				continue;
+			}
+
+			auto player_pawn = GetBaseEntityFromHandle(player_hpawn, client);
+			if (!player_pawn)
+			{
+				continue;
+			}
+
+			auto player_team = *reinterpret_cast<int*>(player_pawn + cs2_dumper::schemas::client_dll::C_BaseEntity::m_iTeamNum);
+			if (cs::visuals::team_CT) {
+				if (player_team == 3) {
+					continue;
+				}
+			}
+			if (cs::visuals::team_T) {
+				if (player_team == 2) {
+					continue;
+				}
+			}
+
+			auto player_health = *reinterpret_cast<int*>(player_pawn + cs2_dumper::schemas::client_dll::C_BaseEntity::m_iHealth);
+			if (player_health <= 0 || player_health > 100)
+				continue;
+
+			auto weaponServices = *reinterpret_cast<uintptr_t*>(player_pawn + cs2_dumper::schemas::client_dll::C_BasePlayerPawn::m_pWeaponServices);
+			if (!weaponServices) {
+				continue;
+			}
+			// 获取当前武器句柄（使用与偏移匹配的类型）
+			// 若m_hActiveWeapon实际是32位，用uint32_t；若是64位，用uint64_t
+			uint32_t activeWeaponHandle = *reinterpret_cast<uint32_t*>(weaponServices + cs2_dumper::schemas::client_dll::CPlayer_WeaponServices::m_hActiveWeapon);
+			// 检查无效句柄（32位无效值）
+			if (activeWeaponHandle == 0xFFFFFFFF) {
+				continue;
+			}
+			// 解析武器实体地址
+			uintptr_t weaponBase = GetBaseEntityFromHandle(activeWeaponHandle, client);
+			if (!weaponBase) {
+				continue;
+			}
+			// 主武器当前弹夹弹药
+			auto player_iAmmo1 = *reinterpret_cast<int*>(weaponBase + cs2_dumper::schemas::client_dll::C_BasePlayerWeapon::m_iClip1);
+			//主武器弹夹弹药
+			//auto player_iMaxAmmo1 = *reinterpret_cast<int*>(weaponBase + cs2_dumper::schemas::client_dll::CBasePlayerWeaponVData::m_iMaxClip1);
+			//主武器最大弹药
+			auto player_pReserveAmmo1 = *reinterpret_cast<int*>(weaponBase + cs2_dumper::schemas::client_dll::C_BasePlayerWeapon::m_pReserveAmmo);
+
+			// 副武器当前弹夹弹药
+			auto player_iAmmo2 = *reinterpret_cast<int*>(weaponBase + cs2_dumper::schemas::client_dll::C_BasePlayerWeapon::m_iClip2);
+
+			//副武器最大弹药
+			auto player_pReserveAmmo2 = *reinterpret_cast<int*>(weaponBase + cs2_dumper::schemas::client_dll::C_BasePlayerWeapon::m_pReserveAmmo + 4);
+			//武器ID
+			auto player_weaponID = *reinterpret_cast<uint16_t*>(weaponBase + cs2_dumper::schemas::client_dll::C_EconEntity::m_AttributeManager + cs2_dumper::schemas::client_dll::C_AttributeContainer::m_Item + cs2_dumper::schemas::client_dll::C_EconItemView::m_iItemDefinitionIndex);
+
+
+			//护甲值
+			auto player_armor = *reinterpret_cast<int*>(player_pawn + cs2_dumper::schemas::client_dll::C_CSPlayerPawn::m_ArmorValue);
+			//是否头盔
+			auto ItemServices = *reinterpret_cast<uintptr_t*>(player_pawn + cs2_dumper::schemas::client_dll::C_BasePlayerPawn::m_pItemServices);
+			if (!ItemServices) {
+				continue;
+			}
+
+			auto player_bHasHelmet = *reinterpret_cast<bool*>(ItemServices + cs2_dumper::schemas::client_dll::CCSPlayer_ItemServices::m_bHasHelmet);
+			//玩家三维坐标
+			auto player_Origin = *reinterpret_cast<Vector3*>(player_pawn + cs2_dumper::schemas::client_dll::C_BasePlayerPawn::m_vOldOrigin);
+			if (player_Origin.IsVectorEmpty())
+				continue;
+			auto player_eyepos_op_vec = GetEyePos(player_pawn);
+
+			if (!player_eyepos_op_vec.has_value())
+				continue;
+			auto player_eyepos = player_eyepos_op_vec.value();
+			Vector3 Player_Head_Pos = BonePos(player_pawn, 6);
+
+
+			Vector3 head_pos_2d{};
+			Vector3 abs_pos_2d{};
+			static const float w = ImGui::GetIO().DisplaySize.x;
+			static const float h = ImGui::GetIO().DisplaySize.y;
+			if (!WorldToScreen(player_Origin, abs_pos_2d, Matrix, w, h))
+			{
+				continue;
+			}
+
+			if (!WorldToScreen(player_eyepos, head_pos_2d, Matrix, w, h))
+			{
+				continue;
+			}
+
+
+
+
+
+
+			//头顶圆圈
+			Vector3 head_pos{};
+			Vector3 neck_pos{};
+			Vector3 aimbot_head_pos{};
+			Vector3 aimbot_pos{};
+			if (!WorldToScreen(BonePos(player_pawn, Bone_Base::BoneIndex::head), head_pos, Matrix, w, h)) {
+				continue;
+			}
+			if (!WorldToScreen(BonePos(player_pawn, Bone_Base::BoneIndex::neck_0), neck_pos, Matrix, w, h)) {
+				continue;
+			};
+			float Radius = abs(head_pos.y - neck_pos.y) + 3;
+
+
+
+
+			const float height{ ::abs(head_pos_2d.y - abs_pos_2d.y) * 1.25f };
+			const float width{ height / 2.f };
+			const float x = head_pos_2d.x - (width / 2.f);//左上角x
+			const float y = head_pos_2d.y - (width / 2.5f);//左上角y
+
+
+			//血条
+
+
+			ImDrawList* DrawList = ImGui::GetBackgroundDrawList();
+
+			float Proportion = static_cast<float>(player_health) / 100;
+			float Height = height * Proportion;
+			ImColor Color;
+			float Color_Lerp_t = pow(Proportion, 2.5);
+			if (InRange(Proportion, 0.5, 1))
+				Color = Mix(FirstStageColor, SecondStageColor, Color_Lerp_t * 3 - 1);
+			else
+				Color = Mix(SecondStageColor, ThirdStageColor, Color_Lerp_t * 4);
+
+
+
+
+			//填充方框
+			if (cs::visuals::FilledBox)
+			{
+				if (cs::visuals::FilledVisBox) {
+					// visCheck from @KeysIsCool：判断实体是否被本地玩家发现
+					DrawFilledRoundedBox(DrawList, x, y, width, height, ImColor(cs::visuals::PathFillConvex));
+
+
+				}
+				else {
+					if (cs::visuals::boxMultiColor)
+					{
+						RectangleFilledGraident(DrawList, x, y, width, height, ImColor(cs::visuals::boxColor), ImColor(cs::visuals::FillConvex), ImColor(cs::visuals::FillConvex2));
+					}
+					else
+					{
+						DrawFilledRoundedBox(DrawList, x, y, width, height, ImColor(cs::visuals::FillConvex));
+					}
+				}
+			}
+
+			if (cs::visuals::box)
+			{
+				if (cs::visuals::SelectedBoxType == 0)
+				{
+					if (cs::visuals::OutLine)
+						DrawList->AddRect(ImVec2(x, y), ImVec2(x + width, y + height), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, RandomPara<float>(0.0f, 3.0f), 0, 3);
+
+					DrawList->AddRect(ImVec2(x, y), ImVec2(x + width, y + height), ImColor(cs::visuals::PathFillConvex), RandomPara<float>(0.0f, 3.0f), 0, 1.3);
+
+				}
+				else
+				{
+					DrawList->AddLine(ImVec2(x, y), ImVec2(x + width * 0.25f, y), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, 3);
+					DrawList->AddLine(ImVec2(x, y), ImVec2(x, y + height * 0.25f), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, 3);
+					DrawList->AddLine(ImVec2(x + width, y + height), ImVec2(x + width - width * 0.25f, y + height), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, 3);
+					DrawList->AddLine(ImVec2(x + width, y + height), ImVec2(x + width, y + height - height * 0.25f), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, 3);
+					DrawList->AddLine(ImVec2(x, y + height), ImVec2(x + width * 0.25f, y + height), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, 3);
+					DrawList->AddLine(ImVec2(x, y + height), ImVec2(x, y + height - height * 0.25f), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, 3);
+					DrawList->AddLine(ImVec2(x + width, y), ImVec2(x + width - width * 0.25f, y), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, 3);
+					DrawList->AddLine(ImVec2(x + width, y), ImVec2(x + width, y + height * 0.25f), ImColor(cs::visuals::boxColor) & IM_COL32_A_MASK, 3);
+
+					// Main Box Lines
+
+					DrawList->AddLine(ImVec2(x, y), ImVec2(x + width * 0.25f, y), ImColor(cs::visuals::PathFillConvex), 1.3f);
+					DrawList->AddLine(ImVec2(x, y), ImVec2(x, y + height * 0.25f), ImColor(cs::visuals::PathFillConvex), 1.3f);
+					DrawList->AddLine(ImVec2(x + width, y), ImVec2(x + width - width * 0.25f, y), ImColor(cs::visuals::PathFillConvex), 1.3f);
+					DrawList->AddLine(ImVec2(x + width, y), ImVec2(x + width, y + height * 0.25f), ImColor(cs::visuals::PathFillConvex), 1.3f);
+					DrawList->AddLine(ImVec2(x, y + height), ImVec2(x + width * 0.25f, y + height), ImColor(cs::visuals::PathFillConvex), 1.3f);
+					DrawList->AddLine(ImVec2(x, y + height), ImVec2(x, y + height - height * 0.25f), ImColor(cs::visuals::PathFillConvex), 1.3f);
+					DrawList->AddLine(ImVec2(x + width, y + height), ImVec2(x + width - width * 0.25f, y + height), ImColor(cs::visuals::PathFillConvex), 1.3f);
+					DrawList->AddLine(ImVec2(x + width, y + height), ImVec2(x + width, y + height - height * 0.25f), ImColor(cs::visuals::PathFillConvex), 1.3f);
+
+
+				}
+			}
+			//骨骼
+			if (cs::visuals::bone)
+			{
+
+				Bone_Start(player_pawn, ImColor(cs::visuals::boneVisColor), Matrix);
+
+
+			}
+
+			//护甲
+			if (cs::visuals::armor) {
+				if (player_armor > 0) {
+
+					float armorProportion = static_cast<float>(player_armor) / 100;
+					float armorHeight = height * armorProportion;
+					ImColor armorColor;
+
+					DrawList->AddRectFilled({ x - 4, y },
+						{ x, abs_pos_2d.y },
+						BackGroundColor, 5, 15);
+					if (player_bHasHelmet)
+						armorColor = ArmorWithHelmetColor;
+					else
+						armorColor = ArmorColor;
+					DrawList->AddRectFilled({ x - 4, abs_pos_2d.y - armorHeight },
+						{ x,abs_pos_2d.y },
+						armorColor, 0);
+
+					DrawList->AddRect({ x - 4, y },
+						{ x,abs_pos_2d.y },
+						FrameColor, 0, 15, 1);
+
+					if (cs::visuals::armorNum)
+					{
+						if (player_health < 100)
+						{
+							std::string armor_str = Format("%d", player_armor);
+							ImVec2 Pos = { x - 4,abs_pos_2d.y - armorHeight };
+							DrawList->AddText(Pos, ImColor(cs::visuals::healthColor), armor_str.c_str());
+						}
+					}
+				}
+			}
+			//弹药条
+			if (cs::visuals::AmmoBar) {
+				if (player_iAmmo1 >= 0) {
+					float AmmoBarProportion = 0.0f;
+					if (player_pReserveAmmo1 >= player_iAmmo1) {
+						AmmoBarProportion = static_cast<float>(player_iAmmo1) / player_pReserveAmmo1;
+					}
+					else {
+						AmmoBarProportion = 1.0f;
+					}
+					float AmmoBarWidth = width * AmmoBarProportion;
+					ImColor AmmoBarColor;
+
+					DrawList->AddRectFilled({ x, abs_pos_2d.y },
+						{ x, abs_pos_2d.y + 4 },
+						BackGroundColor, 5, 15);
+					DrawList->AddRectFilled({ x, abs_pos_2d.y },
+						{ x + AmmoBarWidth, abs_pos_2d.y + 4 },
+						AmmoColor, 0);
+
+					DrawList->AddRect({ x, abs_pos_2d.y },
+						{ x, abs_pos_2d.y + 4 },
+						FrameColor, 0, 15, 1);
+
+					if (cs::visuals::AmmoNum)
+					{
+
+						std::string Ammo_str = Format("%d|%d", player_iAmmo1, player_pReserveAmmo1);
+						ImVec2 Pos = { x + AmmoBarWidth,abs_pos_2d.y + 4 };
+						DrawList->AddText(Pos, ImColor(cs::visuals::healthColor), Ammo_str.c_str());
+					}
+				}
+			}
+			//血条
+			if (cs::visuals::healthbar) {
+				std::string health_str = Format("%d", player_health);
+				if (cs::visuals::armor) {
+					DrawList->AddRectFilled({ x - 8, y },
+						{ x - 4, abs_pos_2d.y },
+						BackGroundColor, 5, 15);
+					DrawList->AddRectFilled({ x - 8, abs_pos_2d.y - Height },
+						{ x - 4,abs_pos_2d.y },
+						Color, 0);
+
+					DrawList->AddRect({ x - 8, y },
+						{ x - 4,abs_pos_2d.y },
+						FrameColor, 0, 15, 1);
+					if (cs::visuals::health)
+					{
+						ImVec2 Pos = { x - 12,abs_pos_2d.y - Height };
+						DrawList->AddText(Pos, ImColor(cs::visuals::healthColor), health_str.c_str());
+
+					}
+				}
+				else {
+					DrawList->AddRectFilled({ x - 4, y },
+						{ x, abs_pos_2d.y },
+						BackGroundColor, 5, 15);
+					DrawList->AddRectFilled({ x - 4, abs_pos_2d.y - Height },
+						{ x,abs_pos_2d.y },
+						Color, 0);
+
+					DrawList->AddRect({ x - 4, y },
+						{ x,abs_pos_2d.y },
+						FrameColor, 0, 15, 1);
+					if (cs::visuals::health)
+					{
+						ImVec2 Pos = { x - 8,abs_pos_2d.y - Height };
+						DrawList->AddText(Pos, ImColor(cs::visuals::healthColor), health_str.c_str());
+
+					}
+				}
+			}
+			//头部
+			if (cs::visuals::HeadCircle) {
+
+				DrawList->AddCircle(ImVec2(head_pos.x, head_pos.y), Radius, ImColor(cs::visuals::boneVisColor));
+
+			}
+			//武器名称
+			if (cs::visuals::weapon) {
+
+				std::string weaponName = GetWeaponName(int(player_weaponID));
+				//DrawList->AddText(ImVec2(head_pos_2d.x - 8, y - 10 ), ImColor(cs::visuals::weaponColor), weaponName.c_str());
+				std::string weaponIcon = GetWeaponIcon(int(player_weaponID));
+				ImGui::PushFont(g_font_icon);
+				DrawList->AddText(g_font_icon, 16.0f, ImVec2(head_pos_2d.x - 14, y - 30), ImColor(cs::visuals::weaponColor), weaponIcon.c_str());
+				ImGui::PopFont();  // 恢复默认字体
 			}
 		}
 	}

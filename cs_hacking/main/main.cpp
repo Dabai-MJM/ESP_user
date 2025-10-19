@@ -80,6 +80,7 @@ long __stdcall my_present(IDXGISwapChain* _this, UINT a, UINT b) {
 
 	draw_Menu();
 	draw_esp();
+	test();
 	ImGui::EndFrame();
 
 	ImGui::Render();
