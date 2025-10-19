@@ -932,7 +932,7 @@ void draw_esp() {
 		if (cs::visuals::weapon) {
 			
 			std::string weaponName = GetWeaponName(int(player_weaponID));
-			//DrawList->AddText(ImVec2(head_pos_2d.x - 8, y - 10 ), ImColor(cs::visuals::weaponColor), weaponName.c_str());
+			DrawList->AddText(ImVec2(head_pos_2d.x - 8, y - 10 ), ImColor(cs::visuals::weaponColor), weaponName.c_str());
 			std::string weaponIcon = GetWeaponIcon(int(player_weaponID));
 			ImGui::PushFont(g_font_icon);
 			DrawList->AddText(g_font_icon, 16.0f, ImVec2(head_pos_2d.x - 14, y - 30), ImColor(cs::visuals::weaponColor), weaponIcon.c_str());
