@@ -1,0 +1,232 @@
+﻿#include "../imgui_d11/imgui.h"
+#include "gui.h"
+#include <Windows.h>
+#include <string>
+#include <map>
+
+
+std::string GetKeyName(int vk)
+{
+	UINT scanCode = MapVirtualKey(vk, MAPVK_VK_TO_VSC) << 16;
+	char keyName[64] = { 0 };
+	if (GetKeyNameTextA(scanCode, keyName, sizeof(keyName)))
+		return keyName;
+	else {
+		// 鼠标侧键或未识别键，自定义处理
+		switch (vk) {
+		case VK_XBUTTON1: return u8"鼠标侧键 1（前进键）";
+		case VK_XBUTTON2: return u8"鼠标侧键 2（后退键）";
+		case VK_LBUTTON: return u8"鼠标左键";
+		case VK_RBUTTON: return u8"鼠标右键";
+		case VK_MBUTTON: return u8"鼠标中键（滚轮按下）";
+		default: return u8"无知";
+		}
+	}
+}
+const char* boneNames[] = {
+	u8"骨盆", //pelvis
+	u8"脊柱 2 节", //spine_2
+	u8"脊柱 1 节", //spine_1
+	u8"颈部 0 节", //neck_0
+	u8"头部", //head
+	u8"左上臂", //arm_upper_L
+	u8"左前臂", //arm_lower_L
+	u8"左手", //hand_L
+	u8"右上臂", //arm_upper_R
+	u8"右前臂", //arm_lower_R
+	u8"右手", //hand_R
+	u8"左大腿", //leg_upper_L
+	u8"左小腿", //leg_lower_L
+	u8"左脚踝", //ankle_L
+	u8"右大腿", //leg_upper_R
+	u8"右小腿", //leg_lower_R
+	u8"右脚踝", //ankle_R
+};
+std::map<int, std::string> weaponNames = {
+	{1,u8"沙漠之鹰"},
+	{2,u8"双持贝瑞塔"},
+	{3,u8"FN57"},
+	{4,u8"格洛克 18"},
+	{7,u8"AK-47"},
+	{8,u8"AUG"},
+	{9,u8"AWP"},
+	{10,u8"法玛斯"},
+	{11,u8"G3SG1"},
+	{13,u8"加利尔"},
+	{14,u8"M249"},
+	{17,u8"MAC-10"},
+	{19,u8"P90"},
+	{23,u8"MP5-SD"},
+	{24,u8"UMP-45"},
+	{25,u8"XM1014"},
+	{26,u8"PP-野牛"},
+	{27,u8"MAG-7"},
+	{28,u8"内格夫"},
+	{29,u8"截短霰弹枪"},
+	{30,u8"Tec-9"},
+	{31,u8"宙斯电击枪"},
+	{32,u8"P2000"},
+	{33,u8"MP7"},
+	{34,u8"MP9"},
+	{35,u8"Nova霰弹枪"},
+	{36,u8"P250"},
+	{38,u8"SCAR-20"},
+	{39,u8"SG556"},
+	{40,u8"SSG08"},
+	{42,u8"CT阵营刀"},
+	{43,u8"闪光弹"},
+	{44,u8"高爆手雷"},
+	{45,u8"烟雾弹"},
+	{46,u8"燃烧瓶"},
+	{47,u8"诱饵弹"},
+	{48,u8"燃烧弹"},
+	{49,u8"C4炸弹"},
+	{16,u8"M4A1"},
+	{61,u8"USP消音版"},
+	{60,u8"M4A1消音版"},
+	{63,u8"CZ75-Auto"},
+	{64,u8"R8左轮手枪"},
+	{59, u8"T阵营匕首" }
+};
+std::string GetWeaponName(int weaponID) {
+	auto it = weaponNames.find(weaponID);
+	if (it != weaponNames.end()) {
+		return it->second;
+	}
+	return "Weapon_None";
+}
+
+std::string  MapName;
+void draw_Menu() {
+	const char* BoxTypeOptions[] = {
+		u8"完全方框",   // 选项0
+		u8"四角方框",   // 选项1
+	};
+	ImGui::Begin(u8"嘉明专属");
+	{
+		ImGui::Checkbox(u8"方框透视", &cs::visuals::box);
+		if (cs::visuals::box)
+		{
+			ImGui::ColorEdit4(u8"方框颜色", &cs::visuals::PathFillConvex.x);
+			ImGui::ListBox(
+				"##BoxType",
+				&cs::visuals::SelectedBoxType,
+				BoxTypeOptions,
+				cs::visuals::BoxTypeCount,
+				2 // 最大显示行数
+			);
+			switch (cs::visuals::SelectedBoxType) {
+			case 0:  // 第一个选项
+				ImGui::Checkbox(u8"粗边框", &cs::visuals::OutLine);
+				break;
+			}
+		}
+		
+		ImGui::Separator();
+		
+		ImGui::Checkbox(u8"填充方框透视", &cs::visuals::FilledBox);
+		if (cs::visuals::FilledBox) {
+			ImGui::Checkbox(u8"可见区分填充方框", &cs::visuals::FilledVisBox);
+
+			ImGui::ColorEdit4(u8"可见颜色", &cs::visuals::PathFillConvex.x);
+			ImGui::ColorEdit4(u8"不可见颜色(渐变颜色1)", &cs::visuals::FillConvex.x);
+			ImGui::ColorEdit4(u8"渐变颜色2", &cs::visuals::FillConvex2.x);
+			ImGui::Checkbox(u8"渐变方框", &cs::visuals::boxMultiColor);
+		}
+		
+		ImGui::Separator();
+		ImGui::Checkbox(u8"骨骼透视", &cs::visuals::bone);
+		if (cs::visuals::bone) {
+			ImGui::ColorEdit4(u8"骨骼颜色", &cs::visuals::boneColor.x);
+		}
+		
+		ImGui::Checkbox(u8"护甲", &cs::visuals::armor);
+		if (cs::visuals::armor) {
+			ImGui::Checkbox(u8"护甲值", &cs::visuals::armorNum);
+		}
+
+		ImGui::Checkbox(u8"弹药条", &cs::visuals::AmmoBar);
+		if (cs::visuals::AmmoBar) {
+			ImGui::Checkbox(u8"弹药值(当前弹药|总弹药)", &cs::visuals::AmmoNum);
+		}
+		ImGui::Checkbox(u8"血量条", &cs::visuals::healthbar);
+		if (cs::visuals::healthbar) {
+			ImGui::Checkbox(u8"血量", &cs::visuals::health);
+			ImGui::ColorEdit4(u8"血量颜色", &cs::visuals::healthColor.x);
+		}
+		ImGui::Checkbox(u8"头部", &cs::visuals::HeadCircle);
+		if (cs::visuals::HeadCircle) {
+			ImGui::ColorEdit4(u8"头部颜色", &cs::visuals::HeadCircleColor.x);
+		}
+
+		ImGui::Checkbox(u8"距离(m)", &cs::visuals::distance);
+		if (cs::visuals::distance) {
+			ImGui::ColorEdit4(u8"距离颜色", &cs::visuals::distanceColor.x);
+		}
+		ImGui::Checkbox(u8"武器名称", &cs::visuals::weapon);
+		if (cs::visuals::weapon) {
+			ImGui::ColorEdit4(u8"武器名称颜色", &cs::visuals::weaponColor.x);
+		}
+		ImGui::Checkbox(u8"自瞄", &cs::visuals::aimbot);
+		if (cs::visuals::aimbot) {
+			ImGui::Text(u8"自瞄热键: ");
+			ImGui::SameLine();
+			if (ImGui::Button(u8"等待用户输入")) {
+				cs::visuals::waitingForKeybind = true;
+			}
+
+			if (cs::visuals::waitingForKeybind) {
+				for (int vk = 1; vk < 256; vk++) {
+					if (GetAsyncKeyState(vk) & 0x8000) {
+						cs::visuals::aimbotHotkey = vk;
+						cs::visuals::waitingForKeybind = false;
+						break;
+					}
+				}
+			}
+
+			ImGui::Checkbox(u8"自瞄模式(单击|长按)", &cs::visuals::toggleMode); // 勾选=切换模式，取消=长按模式
+			// 显示当前热键名称（可选）
+			ImGui::Text(u8"热键名称: %s", GetKeyName(cs::visuals::aimbotHotkey).c_str());
+
+
+
+			ImGui::Combo(u8"自瞄部位", &cs::visuals::current_item, boneNames, IM_ARRAYSIZE(boneNames));
+
+
+			// 显示滑块
+			ImGui::PushItemWidth(200); // 设置滑动条宽度
+			ImGui::SliderFloat(u8"平滑度", &cs::visuals::Smoothness, 0.0f, 10.0f);
+			ImGui::SliderFloat(u8"范围", &cs::visuals::FOV, 0.0f, 500.0f);
+			ImGui::PopItemWidth();
+		}
+
+		ImGui::Checkbox(u8"辅助道具投掷", &cs::visuals::help); // 勾选=切换模式，取消=长按模式
+		if (cs::visuals::help) {
+			ImGui::Checkbox(u8"载入投掷物点位数据", &cs::visuals::loadnade);
+			ImGui::Checkbox(u8"记录投掷物点位数据", &cs::visuals::RecordHelper);
+			if (cs::visuals::RecordHelper) {
+				ImGui::Text(u8"记录点位热键: ");
+				ImGui::SameLine();
+				if (ImGui::Button(u8"等待用户输入")) {
+					cs::visuals::waitingForKeybind_nade = true;
+				}
+
+				if (cs::visuals::waitingForKeybind_nade) {
+					for (int vk = 1; vk < 256; vk++) {
+						if (GetAsyncKeyState(vk) & 0x8000) {
+							cs::visuals::aimbotHotkey_nade = vk;
+							cs::visuals::waitingForKeybind_nade = false;
+							break;
+						}
+					}
+				}
+				ImGui::Text(u8"记录点位热键名称: %s", GetKeyName(cs::visuals::aimbotHotkey_nade).c_str());
+			}
+
+		}
+
+		
+	}
+	ImGui::End();
+}

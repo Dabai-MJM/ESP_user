@@ -1,0 +1,49 @@
+body {    
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #000000; /* Change the background color as needed */
+}
+
+#canvasContainer {
+    width: 100vmin;
+    height: 100vmin;
+    position: relative;
+    overflow: hidden;
+    float: left;
+    object-fit: contain;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+}
+
+#settingsHolder {
+    visibility: hidden;
+    position: absolute;
+    top: inherit;
+    left: inherit;
+    width: inherit;
+    height: 20%;
+}
+
+#settingsHolder:hover .settings {
+    opacity: 1;
+}
+
+.settings {
+    display: flex;
+    flex-direction: column;
+
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
+    visibility: visible;
+    opacity: 0;
+    padding: 10px;
+    background-color: rgba(25, 25, 25, 0.7); /* Semi-transparent white background */
+    transition: opacity 0.3s ease; /* Smooth transition */
+}
