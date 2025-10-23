@@ -1644,6 +1644,10 @@ void ImDrawList::AddText(const ImVec2& pos, ImU32 col, const char* text_begin, c
 {
     AddText(NULL, 0.0f, pos, col, text_begin, text_end);
 }
+void ImDrawList::AddText(const float size, const ImVec2& pos, ImU32 col, const char* text_begin, const char* text_end)
+{
+    AddText(NULL, size, pos, col, text_begin, text_end);
+}
 
 void ImDrawList::AddImage(ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min, const ImVec2& uv_max, ImU32 col)
 {

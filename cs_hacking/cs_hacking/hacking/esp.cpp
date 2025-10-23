@@ -1,4 +1,4 @@
-#include <Windows.h>
+﻿#include <Windows.h>
 #include <cstdint>
 #include "../cs2_dumper/offsets.hpp"
 #include "../cs2_dumper/client_dll.hpp"
@@ -281,9 +281,9 @@ CGameTrace TraceShape(Vector3& vecStart, Vector3& vecEnd, uintptr_t pSkipEntity,
 	float Start[3] = { vecStart.x,vecStart.y,vecStart.z };
 	float End[3] = { vecEnd.x,vecEnd.y,vecEnd.z };
 
-	TTaceRay pfnTraceShape = (TTaceRay)(client + 0x6EE9C0);
-	Filter pfnCreateFilter = (Filter)(client + 0x2007E0);
-	void* pTraceManager = *(void**)(client + 0x1BB4628);
+	TTaceRay pfnTraceShape = (TTaceRay)(client + 0x6F26F0);
+	Filter pfnCreateFilter = (Filter)(client + 0x2011F0);
+	void* pTraceManager = *(void**)(client + 0x1BBB7D8);
 
 	CTraceRay pTraceRay{};
 	CTraceFilter pFilter{};
@@ -603,6 +603,18 @@ void draw_esp() {
 		auto player_health = *reinterpret_cast<int*>(player_pawn + cs2_dumper::schemas::client_dll::C_BaseEntity::m_iHealth);
 		if (player_health <= 0 || player_health > 100)
 			continue;
+		auto name = *reinterpret_cast<char**>(player_co + cs2_dumper::schemas::client_dll::CCSPlayerController::m_sSanitizedPlayerName);
+		
+		std::string name_str(name);
+		
+		
+		//金钱
+		auto moneyServices = *reinterpret_cast<uintptr_t*>(player_co + cs2_dumper::schemas::client_dll::CCSPlayerController::m_pInGameMoneyServices);
+		if (!moneyServices) {
+			continue;
+		}
+		auto money = *reinterpret_cast<int*>(moneyServices + cs2_dumper::schemas::client_dll::CCSPlayerController_InGameMoneyServices::m_iAccount);
+		std::string money_str = Format("%s:%i", name_str, money);
 		auto weaponServices = *reinterpret_cast<uintptr_t*>(player_pawn + cs2_dumper::schemas::client_dll::C_BasePlayerPawn::m_pWeaponServices);
 		if (!weaponServices) {
 			continue;
@@ -644,6 +656,9 @@ void draw_esp() {
 		}
 
 		auto player_bHasHelmet = *reinterpret_cast<bool*>(ItemServices + cs2_dumper::schemas::client_dll::CCSPlayer_ItemServices::m_bHasHelmet);
+		//是否有拆弹器
+		auto player_bHasDefuser = *reinterpret_cast<bool*>(ItemServices + cs2_dumper::schemas::client_dll::CCSPlayer_ItemServices::m_bHasDefuser);
+		
 		//玩家三维坐标
 		auto player_Origin = *reinterpret_cast<Vector3*>(player_pawn + cs2_dumper::schemas::client_dll::C_BasePlayerPawn::m_vOldOrigin);
 		if (player_Origin.IsVectorEmpty())
@@ -699,7 +714,7 @@ void draw_esp() {
 		const float y = head_pos_2d.y - (width / 2.5f);//左上角y
 		//距离计算
 		int distance = static_cast<int>(sqrtf(powf(player_Origin.x - local_Origin.x, 2) + powf(player_Origin.y - local_Origin.y, 2) + powf(player_Origin.z - local_Origin.z, 2)) / 100);
-		std::string dis_str = Format("%im", distance);
+		std::string dis_str = Format(u8"%i米", distance);
 
 		//血条
 
@@ -717,7 +732,7 @@ void draw_esp() {
 
 
 
-
+		
 		//填充方框
 		if (cs::visuals::FilledBox)
 		{
@@ -929,10 +944,14 @@ void draw_esp() {
 		if (cs::visuals::weapon) {
 			
 			std::string weaponName = GetWeaponName(int(player_weaponID));
-			DrawList->AddText(ImVec2(head_pos_2d.x - 8, y - 10 ), ImColor(cs::visuals::weaponColor), weaponName.c_str());
+			//DrawList->AddText(ImVec2(head_pos_2d.x - 8, y - 10 ), ImColor(cs::visuals::weaponColor), weaponName.c_str());
 			std::string weaponIcon = GetWeaponIcon(int(player_weaponID));
 			ImGui::PushFont(g_font_icon);
 			DrawList->AddText(g_font_icon, 16.0f, ImVec2(head_pos_2d.x - 14, y - 30), ImColor(cs::visuals::weaponColor), weaponIcon.c_str());
+			if (player_bHasDefuser) {
+				DrawList->AddText(g_font_icon, 16.0f, ImVec2(head_pos_2d.x + (width / 2.f), y + height - 10), ImColor(cs::visuals::weaponColor), "r");
+			}
+			
 			ImGui::PopFont();  // 恢复默认字体
 			}
 		//自瞄
@@ -1080,6 +1099,8 @@ void test() {
 			}
 
 			auto player_bHasHelmet = *reinterpret_cast<bool*>(ItemServices + cs2_dumper::schemas::client_dll::CCSPlayer_ItemServices::m_bHasHelmet);
+			auto player_bHasDefuser = *reinterpret_cast<bool*>(ItemServices + cs2_dumper::schemas::client_dll::CCSPlayer_ItemServices::m_bHasDefuser);
+
 			//玩家三维坐标
 			auto player_Origin = *reinterpret_cast<Vector3*>(player_pawn + cs2_dumper::schemas::client_dll::C_BasePlayerPawn::m_vOldOrigin);
 			if (player_Origin.IsVectorEmpty())
@@ -1336,6 +1357,284 @@ void test() {
 				std::string weaponIcon = GetWeaponIcon(int(player_weaponID));
 				ImGui::PushFont(g_font_icon);
 				DrawList->AddText(g_font_icon, 16.0f, ImVec2(head_pos_2d.x - 14, y - 30), ImColor(cs::visuals::weaponColor), weaponIcon.c_str());
+				if (player_bHasDefuser) {
+					DrawList->AddText(g_font_icon, 16.0f, ImVec2(head_pos_2d.x + (width / 2.f), y + height - 10), ImColor(cs::visuals::weaponColor), "r");
+				}
+				ImGui::PopFont();  // 恢复默认字体
+			}
+		}
+	}
+}
+
+template <typename T>
+class c_network_utl_vector_base
+{
+public:
+	uint32_t m_size;
+	T* m_elements;
+};
+
+
+void draw_money() {
+	if (cs::visuals::money) {
+		const auto client = reinterpret_cast<uintptr_t>(GetModuleHandle(L"client.dll"));
+		ImDrawList* DrawList = ImGui::GetBackgroundDrawList();
+		static const float w = ImGui::GetIO().DisplaySize.x;
+		static const float h = ImGui::GetIO().DisplaySize.y;
+		int count = 0;
+		auto local_ctrl = *reinterpret_cast<uintptr_t*>(client + cs2_dumper::offsets::client_dll::dwLocalPlayerController);
+
+		if (!local_ctrl)
+		{
+			return;
+		}
+		auto local_hpawn = *reinterpret_cast<uint32_t*>(local_ctrl + cs2_dumper::schemas::client_dll::CBasePlayerController::m_hPawn);
+		if (local_hpawn == 0xFFFFFFFF)
+		{
+			return;
+		}
+
+		auto localpawn = GetBaseEntityFromHandle(local_hpawn, client);
+		if (!localpawn)
+		{
+			return;
+		}
+		auto localteam = *reinterpret_cast<int*>(localpawn + cs2_dumper::schemas::client_dll::C_BaseEntity::m_iTeamNum);
+		if (!localteam)
+		{
+			return;
+		}
+		for (int i = 0; i < 64; i++) {
+			auto player_co = GetBaseEntity(i, client);
+			if (!player_co)
+				continue;
+			//金钱
+			auto player_hpawn = *reinterpret_cast<uint32_t*>(player_co + cs2_dumper::schemas::client_dll::CBasePlayerController::m_hPawn);
+			if (player_hpawn == 0xFFFFFFFF)
+			{
+				continue;
+			}
+
+			auto player_pawn = GetBaseEntityFromHandle(player_hpawn, client);
+			if (!player_pawn)
+			{
+				continue;
+			}
+			auto player_team = *reinterpret_cast<int*>(player_pawn + cs2_dumper::schemas::client_dll::C_BaseEntity::m_iTeamNum);
+			if (localteam == player_team)
+				continue;
+			auto moneyServices = *reinterpret_cast<uintptr_t*>(player_co + cs2_dumper::schemas::client_dll::CCSPlayerController::m_pInGameMoneyServices);
+			if (!moneyServices) {
+				continue;
+			}
+			auto name = *reinterpret_cast<char**>(player_co + cs2_dumper::schemas::client_dll::CCSPlayerController::m_sSanitizedPlayerName);
+			if (!type)
+				continue;
+			std::string name_str(name);
+
+
+			auto money = *reinterpret_cast<int*>(moneyServices + cs2_dumper::schemas::client_dll::CCSPlayerController_InGameMoneyServices::m_iAccount);
+			std::string money_str = Format("$%i", money);
+
+			
+			DrawList->AddText(ImVec2(w / 4 * 3 - 150, count * 15), ImColor(cs::visuals::money_color), name_str.c_str());
+			DrawList->AddText(ImVec2(w / 4 * 3 - 50, count * 15), ImColor(cs::visuals::money_color), money_str.c_str());
+			count++;
+		}
+	}
+	
+}
+
+
+std::map<std::string, std::string> weaponIconByName = {
+	{"C_DEagle",               "A"},
+	{"C_WeaponElite",          "B"},
+	{"C_WeaponFiveSeven",      "C"},
+	{"C_WeaponGlock",          "D"},
+	{"C_AK47",                 "W"},
+	{"C_WeaponAug",            "U"},
+	{"C_WeaponAWP",            "Z"},
+	{"C_WeaponFamas",          "R"},
+	{"C_WeaponG3SG1",          "X"},
+	{"C_WeaponGalilAR",        "Q"},
+	{"C_WeaponM249",           "g"},
+	{"C_WeaponMAC10",          "K"},
+	{"C_WeaponP90",            "P"},
+	{"C_WeaponUMP45",          "L"},
+	{"C_WeaponXM1014",         "b"},
+	{"C_WeaponBizon",          "M"},
+	{"C_WeaponMag7",           "d"},
+	{"C_WeaponNegev",          "f"},
+	{"C_WeaponSawedoff",       "c"},
+	{"C_WeaponTec9",           "H"},
+	{"C_WeaponTaser",          "h"},
+	{"C_WeaponHKP2000",        "E"},
+	{"C_WeaponMP7",            "N"},
+	{"C_WeaponMP9",            "O"},
+	{"C_WeaponNOVA",           "e"},
+	{"C_WeaponP250",           "F"},
+	{"C_WeaponSCAR20",         "Y"},
+	{"C_WeaponSG556",          "V"},
+	{"C_WeaponSSG08",          "a"},
+	{"C_Flashbang",            "i"},
+	{"C_HEGrenade",            "j"},
+	{"C_SmokeGrenade",         "k"},
+	{"C_MolotovGrenade",       "l"},
+	{"C_DecoyGrenade",         "m"},
+	{"C_IncendiaryGrenade",    "n"},
+	{"C_WeaponM4A1",           "T"},
+	{"C_WeaponCZ75a",          "I"}
+};
+
+// 根据武器类名获取图标（如 "C_WeaponCZ75a" → "I"）
+std::string GetIconByClassName(const std::string& className) {
+	auto it = weaponIconByName.find(className);
+	if (it != weaponIconByName.end()) {
+		return it->second;
+	}
+	return "";  // 未知类名返回问号图标
+}
+void type() {
+	const auto client = reinterpret_cast<uintptr_t>(GetModuleHandle(L"client.dll"));
+	auto Matrix = reinterpret_cast<float*>(client + cs2_dumper::offsets::client_dll::dwViewMatrix);
+	if (!Matrix)
+	{
+		return;
+	}
+	ImDrawList* DrawList = ImGui::GetBackgroundDrawList();
+	static const float w = ImGui::GetIO().DisplaySize.x;
+	static const float h = ImGui::GetIO().DisplaySize.y;
+	int count = 0;
+	for (int i = 0; i < 1024; i++) {
+		auto player_co = GetBaseEntity(i, client);
+		if (!player_co)
+			continue;
+		const uintptr_t m_pEntity_offset = cs2_dumper::schemas::client_dll::CEntityInstance::m_pEntity;
+		auto entity_identity = *reinterpret_cast<uintptr_t*>(player_co + m_pEntity_offset);
+		if (!entity_identity) continue;
+
+		// 步骤2：获取 m_pClassInfo（相对于 c_entity_identity 的偏移 0x08）
+		auto class_info = *reinterpret_cast<uintptr_t*>(entity_identity + 0x08);
+		if (!class_info) continue;
+
+		// 步骤3：读取 unk1（class_info + 0x30）
+		auto unk1 = *reinterpret_cast<uintptr_t*>(class_info + 0x30);
+		if (!unk1) continue;
+
+		// 步骤4：读取 unk2（unk1 + 0x08），指向类名字符串
+		auto unk2 = *reinterpret_cast<const char**>(unk1 + 0x08);  // 假设是 const char*
+		if (!unk2) continue;
+
+		// 步骤5：转换为字符串并使用
+		std::string type_str(unk2);
+		if (type_str == "C_C4") {
+			if (cs::visuals::C4) {
+				uintptr_t m_pGameSceneNode_offset = cs2_dumper::schemas::client_dll::C_BaseEntity::m_pGameSceneNode;
+				auto game_scene_node = *reinterpret_cast<uintptr_t*>(player_co + m_pGameSceneNode_offset);
+				if (!game_scene_node) continue;  // 检查指针有效性
+
+				// 步骤2：从 CGameSceneNode 中获取 m_vecAbsOrigin
+				uintptr_t m_vecAbsOrigin_offset = cs2_dumper::schemas::client_dll::CGameSceneNode::m_vecAbsOrigin;
+				auto scene_origin = *reinterpret_cast<Vector3*>(game_scene_node + m_vecAbsOrigin_offset);
+				Vector3 C4_pos{};
+				WorldToScreen(scene_origin, C4_pos, Matrix, w, h);
+				ImGui::PushFont(g_font_icon);
+				DrawList->AddText(g_font_icon, 24.0f, ImVec2(C4_pos.x, C4_pos.y), ImColor(cs::visuals::weaponColor), "o");
+
+				ImGui::PopFont();  // 恢复默认字体
+			}
+		}
+		if (type_str == "C_PlantedC4") {
+			if (cs::visuals::C4) {
+				auto dwGlobalVars = *reinterpret_cast<std::uintptr_t*>(client + cs2_dumper::offsets::client_dll::dwGlobalVars);
+				
+				auto curtime = *reinterpret_cast<float*>(dwGlobalVars + 0x30);
+				
+				auto bBombTicking = *reinterpret_cast<bool*>(player_co + cs2_dumper::schemas::client_dll::C_PlantedC4::m_bBombTicking);
+				if (bBombTicking) {
+
+					uintptr_t m_pGameSceneNode_offset = cs2_dumper::schemas::client_dll::C_BaseEntity::m_pGameSceneNode;
+					auto game_scene_node = *reinterpret_cast<uintptr_t*>(player_co + m_pGameSceneNode_offset);
+					// 步骤2：从 CGameSceneNode 中获取 m_vecAbsOrigin
+					uintptr_t m_vecAbsOrigin_offset = cs2_dumper::schemas::client_dll::CGameSceneNode::m_vecAbsOrigin;
+					auto scene_origin = *reinterpret_cast<Vector3*>(game_scene_node + m_vecAbsOrigin_offset);
+					auto m_flC4Blow = *reinterpret_cast<float*>(player_co + cs2_dumper::schemas::client_dll::C_PlantedC4::m_flC4Blow);
+					auto blow_time = m_flC4Blow - curtime;
+
+					auto is_defusing = *reinterpret_cast<bool*>(player_co + cs2_dumper::schemas::client_dll::C_PlantedC4::m_bBeingDefused);
+					auto m_flDefuseCountDown = *reinterpret_cast<float*>(player_co + cs2_dumper::schemas::client_dll::C_PlantedC4::m_flDefuseCountDown);
+					auto defuse_time = m_flDefuseCountDown - curtime;
+					std::string blow_time_str = Format(u8"%.1f秒", blow_time);
+					std::string defuse_time_str = Format(u8"%.1f秒", defuse_time);
+					Vector3 C4_pos{};
+					WorldToScreen(scene_origin, C4_pos, Matrix, w, h);
+					ImGui::PushFont(g_font_icon);
+					DrawList->AddText(g_font_icon, 24.0f, ImVec2(C4_pos.x, C4_pos.y), ImColor(cs::visuals::weaponColor), "o");
+					ImGui::PopFont();  // 恢复默认字体
+					DrawList->AddText(ImVec2(w / 4 * 3 + 50, 0), ImColor(cs::visuals::weaponColor), u8"爆炸剩余时间：");
+					DrawList->AddText(ImVec2(w / 4 * 3 + 150, 0), ImColor(cs::visuals::weaponColor), blow_time_str.c_str());
+					DrawList->AddText(ImVec2(w / 4 * 3 + 50, 15), ImColor(cs::visuals::weaponColor), is_defusing ? u8"炸弹状态：      正在拆除" : u8"炸弹状态：      未被拆除");
+					if (is_defusing) {	
+						DrawList->AddText(ImVec2(w / 4 * 3 + 50, 30), ImColor(cs::visuals::weaponColor), u8"拆除剩余时间：");
+						DrawList->AddText(ImVec2(w / 4 * 3 + 150, 30), ImColor(cs::visuals::weaponColor), defuse_time_str.c_str());
+					}
+					
+					
+				}
+			}
+		}
+		if (cs::visuals::all_weapon) {
+			if (type_str == "C_AK47"
+				|| type_str == "C_WeaponP90"
+				|| type_str == "C_WeaponMAC10"
+				|| type_str == "C_WeaponMP7"  // 去重后保留一次
+				|| type_str == "C_WeaponElite"
+				|| type_str == "C_WeaponGlock"
+				|| type_str == "C_WeaponP250"
+				|| type_str == "C_WeaponTec9"
+				|| type_str == "C_DEagle"  // 去重后保留一次
+				|| type_str == "C_WeaponXM1014"
+				|| type_str == "C_WeaponNOVA"
+				|| type_str == "C_WeaponTaser"
+				|| type_str == "C_WeaponGalilAR"
+				|| type_str == "C_WeaponSG556"
+				|| type_str == "C_WeaponSSG08"
+				|| type_str == "C_Flashbang"
+				|| type_str == "C_SmokeGrenade"
+				|| type_str == "C_HEGrenade"
+				|| type_str == "C_MolotovGrenade"
+				|| type_str == "C_DecoyGrenade"
+				|| type_str == "C_WeaponAWP"
+				|| type_str == "C_WeaponHKP2000"  // 去重后保留一次
+				|| type_str == "C_IncendiaryGrenade"
+				|| type_str == "C_WeaponAug"
+				|| type_str == "C_WeaponM4A1"
+				|| type_str == "C_WeaponFamas"
+				|| type_str == "C_WeaponMP9"
+				|| type_str == "C_WeaponFiveSeven"
+				|| type_str == "C_WeaponCZ75a"
+				|| type_str == "C_WeaponNegev"
+				|| type_str == "C_WeaponMag7"
+				|| type_str == "C_WeaponBizon"
+				|| type_str == "C_WeaponUMP45"
+				|| type_str == "C_WeaponSCAR20"
+				|| type_str == "C_WeaponG3SG1"
+				|| type_str == "C_WeaponM249"
+				|| type_str == "C_WeaponSawedoff"
+				) {
+				uintptr_t m_pGameSceneNode_offset = cs2_dumper::schemas::client_dll::C_BaseEntity::m_pGameSceneNode;
+				auto game_scene_node = *reinterpret_cast<uintptr_t*>(player_co + m_pGameSceneNode_offset);
+				if (!game_scene_node) continue;  // 检查指针有效性
+
+				// 步骤2：从 CGameSceneNode 中获取 m_vecAbsOrigin
+				uintptr_t m_vecAbsOrigin_offset = cs2_dumper::schemas::client_dll::CGameSceneNode::m_vecAbsOrigin;
+				auto scene_origin = *reinterpret_cast<Vector3*>(game_scene_node + m_vecAbsOrigin_offset);
+				Vector3 C4_pos{};
+				WorldToScreen(scene_origin, C4_pos, Matrix, w, h);
+				ImGui::PushFont(g_font_icon);
+				std::string weaponIcon = GetIconByClassName(type_str);
+				DrawList->AddText(g_font_icon, 16.0f, ImVec2(C4_pos.x, C4_pos.y), ImColor(cs::visuals::weaponColor), weaponIcon.c_str());
+
 				ImGui::PopFont();  // 恢复默认字体
 			}
 		}

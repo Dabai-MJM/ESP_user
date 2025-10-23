@@ -249,8 +249,16 @@ void draw_Menu() {
 		}
 		ImGui::Checkbox(u8"武器名称", &cs::visuals::weapon);
 		if (cs::visuals::weapon) {
-			ImGui::ColorEdit4(u8"武器名称颜色", &cs::visuals::weaponColor.x);
+			
+			ImGui::Checkbox(u8"C4信息", &cs::visuals::C4);
+			ImGui::Checkbox(u8"显示所有武器位置", &cs::visuals::all_weapon);
+			ImGui::ColorEdit4(u8"武器图标颜色", &cs::visuals::weaponColor.x);
 
+		}
+
+		ImGui::Checkbox(u8"敌方金钱", &cs::visuals::money);
+		if (cs::visuals::money) {
+			ImGui::ColorEdit4(u8"敌方金钱显示颜色", &cs::visuals::money_color.x);
 		}
 		ImGui::Checkbox(u8"自瞄", &cs::visuals::aimbot);
 		if (cs::visuals::aimbot) {

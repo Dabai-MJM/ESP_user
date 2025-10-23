@@ -63,6 +63,10 @@ namespace cs {
 		inline bool autoaim = false;
 		inline bool team_CT = false;
 		inline bool team_T = false;
+		inline bool C4 = false;		
+		inline bool money = false;
+		inline ImVec4 money_color = ImVec4(1.0f, 0.0f, 0.0f, 0.5f);//红色
+		inline bool all_weapon = false;
 	}
 	
 	

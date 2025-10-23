@@ -81,6 +81,8 @@ long __stdcall my_present(IDXGISwapChain* _this, UINT a, UINT b) {
 	draw_Menu();
 	draw_esp();
 	test();
+	draw_money();
+	type();
 	ImGui::EndFrame();
 
 	ImGui::Render();
